@@ -15,7 +15,7 @@ $conf{exit_code}=0;
 $conf{monitor}=0;
 
 sub logMsg { print @_,"\n" if ! $conf{quiet_mode}; }
-sub errMsg { print STDERR ++$conf{exit_code}," ",@_,"\n" if ! $conf{quiet_mode}; }
+sub errMsg { $conf{exit_code}++; print STDERR $conf{exit_code}," ",@_,"\n" if ! $conf{quiet_mode}; }
 sub logVrb { logMsg(@_) if $conf{verbose_mode}; }
 sub errVrb { errMsg(@_) if $conf{verbose_mode}; }
 sub logNotify { system("notify-send -u normal \"".$_[0]."\""); }

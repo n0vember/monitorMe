@@ -51,6 +51,11 @@ test_ko_is_ko() {
     "does not fail for ko test"
 }
 
+test_ko_is_ko_when_quiet() {
+  assert_fail "../monitorMe --quiet --config config_file_for_ko_test" \
+    "does not fail for ko test when quiet mode enabled"
+}
+
 test_quiet_mode_is_quiet() {
   assert_equals "$(../monitorMe --config config_file_for_ko_test --quiet 2>&1)" "" \
     "quiet mode is not quiet"
