@@ -1,0 +1,17 @@
+---
+language: python
+python: "2.7"
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - notify-osd
+
+install:
+  - curl -o bash_unit "https://raw.githubusercontent.com/pgrange/bash_unit/master/bash_unit"
+  - chmod +x bash_unit
+
+script:
+  - ./bash_unit tests/tests_monitorMe
