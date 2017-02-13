@@ -2,8 +2,18 @@
 
 use strict;
 use Getopt::Long;
-use AnyEvent;
 use Env qw(HOME);
+use Module::Load qw(autoload);
+use Module::Load::Conditional qw(check_install);
+
+my @module_list=("AnyEvent");
+foreach (@module_list) {
+  check_install(module => $_) or die "
+$_ is not installed.
+Try installation with 'cpan $_' or with the package manager of your distribution.
+";
+  autoload $_;
+}
 
 my %conf;
 
