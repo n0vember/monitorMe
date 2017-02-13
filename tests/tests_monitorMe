@@ -1,11 +1,22 @@
 #!/usr/bin/env bash 
 
+test_search_config_file_finds_or_not() {
+  user_conf_file=0;
+  [ -f "$HOME/.config/monitorMe/config" ] && user_conf_file=1
+  if [ $user_conf_file -eq 1 ] ; then
+    assert_fail "../monitorMe --search 2>&1 >/dev/null | grep 'No config file found'" \
+      "Did not find an existing config file"
+  else
+    assert "../monitorMe --search 2>&1 >/dev/null | grep 'No config file found'" "Did not fail on config search"
+  fi
+}
+
 test_timer_ends_the_monitoring() {
   begin=$(date +%s)
   timeout 5 ../monitorMe --config config_file_for_ok_test --monitor --time 1
   end=$(date +%s)
   duration=$((end-begin))
-  assert_equals "1" "$duration" "it took $duration seconds with timer set to 1"
+  assert "test $duration -lt 4" "it took $duration seconds with timer set to 1"
 }
 
 test_no_conf_file_exits_with_error() {

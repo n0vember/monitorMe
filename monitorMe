@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Long;
 use AnyEvent;
+use Env qw(HOME);
 
 my %conf;
 
@@ -24,6 +25,7 @@ sub usage {
   errMsg @_ if @_;
   logMsg if @_;
   logMsg "usage: $conf{my_name} --config file [--verbose ] [--quiet] [--monitor [--time x]]";
+  logMsg "   or: $conf{my_name} --search [--verbose ] [--quiet] [--monitor [--time x]]";
   logMsg "   or: $conf{my_name} --usage [ --verbose ]";
   logMsg "  --config : specify config file";
   logVrb "             Config file is composed of shell commands, one per line.";
@@ -58,6 +60,7 @@ sub load {
   open CONF,"<$conf{config_file}";
   while (<CONF>) {
     chomp;
+    next if /^#/;
     (my $command, my $message)=split /#/;
     $command=~ s: *$: >/dev/null 2>&1:;
     $message=~ s/^ *//;
@@ -76,6 +79,7 @@ sub load {
 
 GetOptions (
     "config=s" => \$conf{config_file},
+    "search" => \$conf{search},
     "verbose" => \$conf{verbose_mode},
     "quiet" => \$conf{quiet_mode},
     "usage" => sub { usage; },
@@ -87,8 +91,13 @@ $conf{quiet_mode}=1 if $conf{monitor};
 $conf{verbose_mode}=0 if $conf{monitor};
 usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and $conf{quiet_mode};
 logVrb "Verbose mode is activated.";
+
+usage "--search and --config are exclusive." if $conf{config_file} and $conf{search};
+$conf{config_file}="${HOME}/.config/monitorMe/config" if -f "${HOME}/.config/monitorMe/config" and $conf{search};
+errMsg "No config file found." if ! $conf{config_file} and $conf{search};
 usage "config file is mandatory." if ! $conf{config_file};
 usage "$conf{config_file} does not exist." if ! -f $conf{config_file};
+
 logVrb "specifying --time without --monitor is pointless..." if $conf{monitor} and $conf{monitor_time};
 
 my %commands;
