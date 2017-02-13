@@ -87,6 +87,8 @@ GetOptions (
     "time=i" => \$conf{monitor_time},
   ) or die("Error in command line arguments\n");
 
+system("mkdir -p ${HOME}/.config/monitorMe") if ! -d "${HOME}/.config/monitorMe";
+
 $conf{quiet_mode}=1 if $conf{monitor};
 $conf{verbose_mode}=0 if $conf{monitor};
 usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and $conf{quiet_mode};
