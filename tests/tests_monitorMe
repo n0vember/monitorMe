@@ -1,5 +1,13 @@
 #!/usr/bin/env bash 
 
+test_timer_ends_the_monitoring() {
+  begin=$(date +%s)
+  timeout 5 ../monitorMe --config config_file_for_ok_test --monitor --time 1
+  end=$(date +%s)
+  duration=$((end-begin))
+  assert_equals "1" "$duration" "it took $duration seconds with timer set to 1"
+}
+
 test_no_conf_file_exits_with_error() {
   assert_fail "../monitorMe" \
     "call without a configuration file exits 0"

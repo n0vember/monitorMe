@@ -23,7 +23,7 @@ sub errNotify { system("notify-send -u critical \"".$_[0]."\""); }
 sub usage {
   errMsg @_ if @_;
   logMsg if @_;
-  logMsg "usage: $conf{my_name} --config file [--verbose ] [--quiet] [--monitor]";
+  logMsg "usage: $conf{my_name} --config file [--verbose ] [--quiet] [--monitor [--time x]]";
   logMsg "   or: $conf{my_name} --usage [ --verbose ]";
   logMsg "  --config : specify config file";
   logVrb "             Config file is composed of shell commands, one per line.";
@@ -34,6 +34,7 @@ sub usage {
   logMsg "  --quiet : does not produce any output";
   logMsg "  --monitor : start an endless loop and send notifications on state changes";
   logVrb "              Monitoring implies quiet mode.";
+  logMsg "  --time : when in monitor mode, this will end the monitoring after x seconds";
   exit $conf{exit_code};
 }
 
@@ -43,7 +44,7 @@ sub treat_all {
     logVrb "Trying '".$$commands{$_}{command}."'";
     my $status=system($$commands{$_}{command});
     logVrb "Result is OK" if $status == 0;
-    (my $logOut, my $errOut)=(\&logMsg, \&errMsg);
+    (my $logOut, my $errOut)=(\&logVrb, \&errMsg);
     ($logOut, $errOut)=(\&logNotify, \&errNotify) if $conf{monitor};
     &$logOut($$commands{$_}{message_ok}) if $status == 0 and $status != $$commands{$_}{status};
     &$errOut($$commands{$_}{message_ko}) if ! $status == 0 and $status != $$commands{$_}{status};
@@ -79,6 +80,7 @@ GetOptions (
     "quiet" => \$conf{quiet_mode},
     "usage" => sub { usage; },
     "monitor" => \$conf{monitor},
+    "time=i" => \$conf{monitor_time},
   ) or die("Error in command line arguments\n");
 
 $conf{quiet_mode}=1 if $conf{monitor};
@@ -87,6 +89,7 @@ usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and 
 logVrb "Verbose mode is activated.";
 usage "config file is mandatory." if ! $conf{config_file};
 usage "$conf{config_file} does not exist." if ! -f $conf{config_file};
+logVrb "specifying --time without --monitor is pointless..." if $conf{monitor} and $conf{monitor_time};
 
 my %commands;
 load $conf{config_file},\%commands;
@@ -96,5 +99,6 @@ if ( ! $conf{monitor} ) {
 } else {
   my $c = AnyEvent->condvar;
   my $check = AnyEvent->timer ( after => 0, interval => 5, cb => sub { treat_all \%commands; });
+  my $exit = AnyEvent->timer ( after => $conf{monitor_time}, cb => sub { exit $conf{exit_code}; }) if $conf{monitor_time};
   $c->wait;
 }
