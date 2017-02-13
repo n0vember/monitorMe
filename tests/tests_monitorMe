@@ -1,0 +1,49 @@
+#!/usr/bin/env bash 
+
+test_no_conf_file_exits_with_error() {
+  assert_fail "../monitorMe" \
+    "call without a configuration file exits 0"
+}
+
+test_usage_option_displays_usage() {
+  assert "../monitorMe --usage 2>&1 | head -1 | grep '^usage:'" \
+    "--usage does not display usage"
+}
+
+test_verbose_option_activates_verbose_mode() {
+  assert "../monitorMe --verbose 2>&1 | grep '^Verbose mode is activated.'" \
+    "verbose not activated by --verbose"
+}
+
+test_error_when_config_file_does_not_exist() {
+  assert_fail "../monitorMe --config this_file_surely_does_not_exist" \
+    "verbose not activated by --verbose"
+}
+
+test_ok_is_ok() {
+  assert "../monitorMe --config config_file_for_ok_test" \
+    "fails for ok test"
+}
+
+test_ko_is_ko() {
+  assert_fail "../monitorMe --config config_file_for_ko_test" \
+    "does not fail for ko test"
+}
+
+test_quiet_mode_is_quiet() {
+  assert_equals "$(../monitorMe --config config_file_for_ko_test --quiet 2>&1)" "" \
+    "quiet mode is not quiet"
+}
+
+setup() {
+  cat > config_file_for_ok_test <<EOF
+uname -s # system does not know its name
+EOF
+  cat > config_file_for_ko_test <<EOF
+test 1 -eq 0 # this must fail
+EOF
+}
+
+teardown() {
+  rm config_file_for_{ok,ko}_test
+}
