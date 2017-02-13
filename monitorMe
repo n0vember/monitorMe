@@ -2,6 +2,7 @@
 
 use strict;
 use Getopt::Long;
+use AnyEvent;
 
 my %conf;
 
@@ -10,16 +11,19 @@ $conf{config_file}="";
 $conf{verbose_mode}=0;
 $conf{quiet_mode}=0;
 $conf{exit_code}=0;
+$conf{monitor}=0;
 
 sub logMsg { print @_,"\n" if ! $conf{quiet_mode}; }
 sub errMsg { print STDERR ++$conf{exit_code}," ",@_,"\n" if ! $conf{quiet_mode}; }
 sub logVrb { logMsg(@_) if $conf{verbose_mode}; }
 sub errVrb { errMsg(@_) if $conf{verbose_mode}; }
+sub logNotify { system("notify-send -u normal \"".$_[0]."\""); }
+sub errNotify { system("notify-send -u critical \"".$_[0]."\""); }
 
 sub usage {
   errMsg @_ if @_;
   logMsg if @_;
-  logMsg "usage: $conf{my_name} --config file [--verbose ] [--quiet]";
+  logMsg "usage: $conf{my_name} --config file [--verbose ] [--quiet] [--monitor]";
   logMsg "   or: $conf{my_name} --usage [ --verbose ]";
   logMsg "  --config : specify config file";
   logVrb "             Config file is composed of shell commands, one per line.";
@@ -28,7 +32,45 @@ sub usage {
   logMsg "  --usage : displays this help (--verbose produces more)";
   logMsg "  --verbose : enables verbose mode";
   logMsg "  --quiet : does not produce any output";
+  logMsg "  --monitor : start an endless loop and send notifications on state changes";
+  logVrb "              Monitoring implies quiet mode.";
   exit $conf{exit_code};
+}
+
+sub treat_all {
+  (my $commands, my @ignore)=@_;
+  foreach (keys %$commands) {
+    logVrb "Trying '".$$commands{$_}{command}."'";
+    my $status=system($$commands{$_}{command});
+    logVrb "Result is OK" if $status == 0;
+    (my $logOut, my $errOut)=(\&logMsg, \&errMsg);
+    ($logOut, $errOut)=(\&logNotify, \&errNotify) if $conf{monitor};
+    &$logOut($$commands{$_}{message_ok}) if $status == 0 and $status != $$commands{$_}{status};
+    &$errOut($$commands{$_}{message_ko}) if ! $status == 0 and $status != $$commands{$_}{status};
+    $$commands{$_}{status}=$status;
+  }
+}
+
+sub load {
+  (my $config_file, my $commands, my @ignore)=@_;
+  my $key=0;
+  open CONF,"<$conf{config_file}";
+  while (<CONF>) {
+    chomp;
+    (my $command, my $message)=split /#/;
+    $command=~ s: *$: >/dev/null 2>&1:;
+    $message=~ s/^ *//;
+    (my $message_ok, my $message_ko)=split /\//,$message;
+    $message_ok=~ s/ *$//;
+    $message_ko=~ s/^ *//;
+    $$commands{$key++}={
+      'command' => $command,
+      'message_ko' => $message_ko,
+      'message_ok' => $message_ok,
+      'status' => 0,
+    };
+  }
+  close CONF;
 }
 
 GetOptions (
@@ -36,24 +78,23 @@ GetOptions (
     "verbose" => \$conf{verbose_mode},
     "quiet" => \$conf{quiet_mode},
     "usage" => sub { usage; },
+    "monitor" => \$conf{monitor},
   ) or die("Error in command line arguments\n");
 
+$conf{quiet_mode}=1 if $conf{monitor};
+$conf{verbose_mode}=0 if $conf{monitor};
 usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and $conf{quiet_mode};
 logVrb "Verbose mode is activated.";
 usage "config file is mandatory." if ! $conf{config_file};
 usage "$conf{config_file} does not exist." if ! -f $conf{config_file};
 
-open CONF,"<$conf{config_file}";
-while (<CONF>) {
-  chomp;
-  logVrb "current line is : $_";
-  (my $command, my $message)=split /#/;
-  $command=~ s: *$: >/dev/null 2>&1:;
-  $message=~ s/^ *//;
-  logVrb "  command is : $command";
-  logVrb "  message is : $message";
-  system($command) == 0 or errMsg $message;
+my %commands;
+load $conf{config_file},\%commands;
+if ( ! $conf{monitor} ) {
+  treat_all \%commands;
+  exit $conf{exit_code};
+} else {
+  my $c = AnyEvent->condvar;
+  my $check = AnyEvent->timer ( after => 0, interval => 5, cb => sub { treat_all \%commands; });
+  $c->wait;
 }
-close CONF;
-
-exit $conf{exit_code};

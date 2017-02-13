@@ -1,1 +1,3 @@
-uname -s # I don't know my name
+uname -s # I know what I am / I don't know what I am
+hostname # I know my name / I don't know my name
+pgrep dnsmasq # dnsmasq is running / dnsmasq process is not running
