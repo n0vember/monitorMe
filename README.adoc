@@ -1,0 +1,70 @@
+= monitorMe
+
+image:https://travis-ci.org/n0vember/monitorMe.svg?branch=master[Build Status,link=https://travis-ci.org/n0vember/monitorMe]
+
+This project is here just to help monitor things on your computer. It is not designed for servers.
+
+== installation
+
+[source]
+----
+make install
+----
+
+MonitorMe has prerequisites :
+
+- the AnyEvent perl module. It can be installed with the package manager of your distribution (for instance 'pacman -S perl-anyevent' on ArchLinux) or with cpan ('cpan AnyEvent').
+- notify-send utility. This can be installed with your package manager.
+
+== configuration
+
+[source]
+----
+mkdir -p ~/.config/monitorMe
+vi ~/.config/monitorMe/config
+----
+
+Each line in the file is constituted of three parts : 
+
+- a command
+- a message to display when everythings fine
+- a message to display when command fails (exit code != 0)
+
+Sample configuration file :
+
+[source]
+----
+systemctl status cups-browsed # print service is runnnig / cupsd is stopped
+ip -o a show dev eth0 2>/dev/null | grep -v inet6 # eth0 has an address / eth0 has no IPv4 address
+----
+
+== running
+
+=== once
+
+The previous sample configuration file, processed with the following command :
+
+[source]
+----
+monitorMe --config config
+----
+
+if your eth0 interface has no IPv4 address, output will be :
+
+[source]
+----
+1 eth0 has no IPv4 address
+----
+
+Return code will be 1
+
+=== daemon mode
+
+Running with the --monitor flag will not loop forever, sending notifications (using notify-send) when status of a command changes. In the previous example, if dnsmasq goes down, you will see a notification saying ''cupsd is stopped''. Once you've restarted it, you will see a ''print service is runnnig'' message.
+
+== uninstallation
+
+[source]
+----
+make uninstall
+----
