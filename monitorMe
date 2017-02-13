@@ -60,7 +60,7 @@ sub load {
   open CONF,"<$conf{config_file}";
   while (<CONF>) {
     chomp;
-    next if /^#/;
+    next if /^#/ or /^$/;
     (my $command, my $message)=split /#/;
     $command=~ s: *$: >/dev/null 2>&1:;
     $message=~ s/^ *//;
@@ -93,6 +93,7 @@ usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and 
 logVrb "Verbose mode is activated.";
 
 usage "--search and --config are exclusive." if $conf{config_file} and $conf{search};
+$conf{config_file}="/etc/monitorMe/config" if -f "/etc/monitorMe/config" and $conf{search};
 $conf{config_file}="${HOME}/.config/monitorMe/config" if -f "${HOME}/.config/monitorMe/config" and $conf{search};
 errMsg "No config file found." if ! $conf{config_file} and $conf{search};
 usage "config file is mandatory." if ! $conf{config_file};

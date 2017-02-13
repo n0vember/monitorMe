@@ -1,10 +1,11 @@
-each line contains the following :
-command # message when OK / message when not OK
+# each line contains the following :
+# command # message when OK / message when not OK
+# 
+# commands are executed one by one and, regarding on configuration messages are displayed according to command's return code
+# final return code is the number of failed commands.
+# 
+# examples :
 
-commands are executed one by one and, regarding on configuration messages are displayed according to command's return code
-final return code is the number of failed commands.
-
-examples :
 hostname # I know my name / Who am I ?
 systemctl status cups-browsed # print service is runnnig / cupsd is stopped
-ip -o a show dev eth0 | grep -v inet6 # eth0 has an address / eth0 has no IPv4 address
+ip -o a show dev eth0 2>/dev/null | grep -v inet6 # eth0 has an address / eth0 has no IPv4 address
