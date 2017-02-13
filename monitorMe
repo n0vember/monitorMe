@@ -12,10 +12,7 @@ $conf{quiet_mode}=0;
 $conf{exit_code}=0;
 
 sub logMsg { print @_,"\n" if ! $conf{quiet_mode}; }
-sub errMsg {
-  print STDERR @_,"\n" if ! $conf{quiet_mode};
-  $conf{exit_code}++;
-}
+sub errMsg { print STDERR ++$conf{exit_code}," ",@_,"\n" if ! $conf{quiet_mode}; }
 sub logVrb { logMsg(@_) if $conf{verbose_mode}; }
 sub errVrb { errMsg(@_) if $conf{verbose_mode}; }
 
@@ -42,18 +39,19 @@ GetOptions (
   ) or die("Error in command line arguments\n");
 
 usage "--quiet and --verbose options are exclusive." if $conf{verbose_mode} and $conf{quiet_mode};
-errVrb "Verbose mode is activated.";
+logVrb "Verbose mode is activated.";
 usage "config file is mandatory." if ! $conf{config_file};
 usage "$conf{config_file} does not exist." if ! -f $conf{config_file};
 
 open CONF,"<$conf{config_file}";
 while (<CONF>) {
+  chomp;
   logVrb "current line is : $_";
   (my $command, my $message)=split /#/;
   $command=~ s: *$: >/dev/null 2>&1:;
   $message=~ s/^ *//;
-  logVrb "command is : $command";
-  logVrb "message is : $message";
+  logVrb "  command is : $command";
+  logVrb "  message is : $message";
   system($command) == 0 or errMsg $message;
 }
 close CONF;
