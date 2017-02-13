@@ -2,8 +2,10 @@
 
 test_search_config_file_finds_or_not() {
   user_conf_file=0;
+  sys_conf_file=0;
   [ -f "$HOME/.config/monitorMe/config" ] && user_conf_file=1
-  if [ $user_conf_file -eq 1 ] ; then
+  [ -f "/etc/monitorMe/config" ] && sys_conf_file=1
+  if [ $user_conf_file -eq 1 -o $sys_conf_file -eq 1 ] ; then
     assert_fail "../monitorMe --search 2>&1 >/dev/null | grep 'No config file found'" \
       "Did not find an existing config file"
   else
